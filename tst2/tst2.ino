@@ -35,9 +35,11 @@ void lighting(){
   else {  digitalWrite(LED_BUILTIN, LOW); }
   }
 int aktivate=0;
+int flower_akt=0;
+int timer_akt=0;
 void ir_telecomanda(){
   int value = 0;
-      if(irrecv.decode(&results)){     
+   if(irrecv.decode(&results)){     
         value = results.value;
         int var=myservo.read();
         Serial.println(value);      
@@ -45,17 +47,36 @@ void ir_telecomanda(){
          case 255: 
          {//Keypad button "1"
          myservo.write(0);
-         aktivate=0;
+         aktivate=0;flower_akt=0;timer_akt=0;
          }
 
          }     
        switch(value){     
          case 2295: //Keypad button "2" 
          {myservo.write(180);
-         delay(10000);
-         aktivate=1;
+         aktivate=0;flower_akt=0;timer_akt=0;
+
          //myservo.write(0);
          }
+       }
+       switch(value){     
+         case -30601:
+         if(aktivate==0)
+          {aktivate=1;flower_akt=0;timer_akt=0;}
+          else aktivate=0;
+         
+       }
+       switch(value){     
+         case 18615:
+          if(flower_akt==0)
+          {aktivate=0;flower_akt=1;timer_akt=0;}
+          else flower_akt=0;
+       }
+       switch(value){     
+         case 10455:
+          if(timer_akt==0)
+          {aktivate=0;flower_akt=0;timer_akt=1;}
+          else timer_akt=0;
        }
        irrecv.resume();      
    }
@@ -68,7 +89,7 @@ int duration=0;
 
 void if_distance(){
 
-  
+  delay(50);
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
@@ -85,20 +106,42 @@ void if_distance(){
     //delay(1000);
     if (distance>50)
     {
-      myservo.write(160);
-      myservo.write(120);
-      myservo.write(100);
-      myservo.write(80);
-      myservo.write(60);
-      myservo.write(30);
       myservo.write(0);
     }
     else{
           myservo.write(180);
+          delay(5000);
       }
   
 }
 
+  int tolerance=40;
+  int servoGrad=90;
+void flower(){
+
+  int sensorValue=analogRead(temt6000Pin);
+
+  if ( sensorValue < (512-tolerance) )
+  {
+    if (servoGrad < 180) servoGrad++;
+  }
+
+  if ( sensorValue > (512+tolerance) )
+  {
+    if (servoGrad > 0) servoGrad--;
+  }
+
+  myservo.write( servoGrad );
+}
+
+void timer(){
+  myservo.write(0);
+  delay(1000);
+  myservo.write(90);
+  delay(1000);
+  myservo.write(180);
+  delay(1000);
+  }
 
 // the loop function runs over and over again forever
 void loop() {
@@ -112,6 +155,12 @@ void loop() {
    }
   if(aktivate==1){
   if_distance();}
+
+  if(flower_akt==1){
+  flower();}
+
+    if(timer_akt==1){
+  timer();}
   ir_telecomanda();
   }// wait for a second
 }
